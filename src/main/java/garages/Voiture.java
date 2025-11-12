@@ -1,97 +1,102 @@
 package garages;
 
+import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 
-import java.io.PrintStream;
-import java.util.*;
-
 /**
- * Représente une voiture qui peut être stationnée dans des garages.
+ * Représente une voiture qui peut être stationnée dans différents garages.
  */
 @RequiredArgsConstructor
 @ToString
 public class Voiture {
 
-	@Getter
-	@NonNull
-	private final String immatriculation;
-	@ToString.Exclude // On ne veut pas afficher les stationnements dans toString
-	private final List<Stationnement> myStationnements = new LinkedList<>();
+    @Getter
+    @NonNull
+    private final String immatriculation;
 
-	/**
-	 * Fait rentrer la voiture au garage
-	 * Précondition : la voiture ne doit pas être déjà dans un garage
-	 *
-	 * @param g le garage où la voiture va stationner
-	 * @throws IllegalStateException Si déjà dans un garage
-	 */
-	public void entreAuGarage(Garage g) throws IllegalStateException {
-		// Et si la voiture est déjà dans un garage ?
+    @ToString.Exclude // On ne veut pas afficher les stationnements dans toString
+    private final List<Stationnement> myStationnements = new LinkedList<>();
 
-		Stationnement s = new Stationnement(this, g);
-		myStationnements.add(s);
-	}
+    /**
+     * Fait rentrer la voiture dans le garage spécifié.
+     * Précondition : la voiture ne doit pas déjà être dans un garage.
+     *
+     * @param g le garage où la voiture va stationner
+     * @throws IllegalStateException si la voiture est déjà dans un garage
+     */
+    public void entreAuGarage(Garage g) throws IllegalStateException {
+        if (estDansUnGarage()) {
+            throw new IllegalStateException("La voiture est déjà dans un garage !");
+        }
+        myStationnements.add(new Stationnement(this, g));
+    }
 
-	/**
-	 * Fait sortir la voiture du garage
-	 * Précondition : la voiture doit être dans un garage
-	 *
-	 * @throws IllegalStateException si la voiture n'est pas dans un garage
-	 */
-	public void sortDuGarage() throws IllegalStateException {
-		throw new UnsupportedOperationException("Pas encore implémenté");
-		// TODO: Implémenter cette méthode
-		// Trouver le dernier stationnement de la voiture
-		// Terminer ce stationnement
-	}
+    /**
+     * Fait sortir la voiture du garage où elle se trouve.
+     * Précondition : la voiture doit être actuellement dans un garage.
+     *
+     * @throws IllegalStateException si la voiture n'est pas dans un garage
+     */
+    public void sortDuGarage() throws IllegalStateException {
+        if (!estDansUnGarage()) {
+            throw new IllegalStateException("Impossible de sortir : la voiture n'est pas dans un garage.");
+        }
+        Stationnement dernier = myStationnements.get(myStationnements.size() - 1);
+        dernier.terminer();
+    }
 
-	/**
-	 * Calcule l'ensemble des garages visités par cette voiture
-	 *
-	 * @return l'ensemble des garages visités par cette voiture
-	 */
-	public Set<Garage> garagesVisites() {
-		// TODO: Implémenter cette méthode
-		throw new UnsupportedOperationException("Pas encore implémenté");
-	}
+    /**
+     * Retourne l'ensemble des garages visités par cette voiture.
+     *
+     * @return un ensemble contenant les garages visités
+     */
+    public Set<Garage> garagesVisites() {
+        Set<Garage> garages = new HashSet<>();
+        for (Stationnement s : myStationnements) {
+            garages.add(s.getGarageVisite());
+        }
+        return garages;
+    }
 
-	/**
-	 * Détermine si la voiture est actuellement dans un garage
-	 *
-	 * @return vrai si la voiture est dans un garage, faux sinon
-	 */
-	public boolean estDansUnGarage() {
-		// TODO: Implémenter cette méthode
-		throw new UnsupportedOperationException("Pas encore implémenté");
-		// Vrai si il y a des stationnements et le dernier stationnement est en cours
-	}
+    /**
+     * Indique si la voiture est actuellement dans un garage.
+     *
+     * @return true si la voiture est dans un garage, false sinon
+     */
+    public boolean estDansUnGarage() {
+        if (myStationnements.isEmpty()) {
+            return false;
+        }
+        Stationnement dernier = myStationnements.get(myStationnements.size() - 1);
+        return dernier.estEnCours();
+    }
 
-	/**
-	 * Pour chaque garage visité, imprime le nom de ce garage suivi de la liste des
-	 * stationnements dans ce garage
-	 * <br>
-	 * Exemple :
-	 *
-	 * <pre>
-	 * Garage(name=Universite Champollion Albi):
-	 * 		Stationnement{ entree=13/11/2024, sortie=13/11/2024 }
-	 * Garage(name=ISIS Castres):
-	 * 		Stationnement{ entree=13/11/2024, sortie=13/11/2024 }
-	 * 		Stationnement{ entree=13/11/2024, en cours }
-	 * </pre>
-	 *
-	 * @param out l'endroit où imprimer (ex: System.out pour imprimer dans la
-	 *            console)
-	 */
+    /**
+     * Affiche la liste des stationnements regroupés par garage.
+     */
+    public void imprimeStationnements(PrintStream out) {
+        Map<Garage, List<Stationnement>> map = new LinkedHashMap<>();
+        for (Stationnement s : myStationnements) {
+            map.computeIfAbsent(s.getGarageVisite(), k -> new ArrayList<>()).add(s);
+        }
 
-	public void imprimeStationnements(PrintStream out) {
-		// TODO: Implémenter cette méthode
-		throw new UnsupportedOperationException("Pas encore implémenté");
-		// Utiliser les méthodes toString() de Garage et Stationnement
-
-	}
-
+        for (Map.Entry<Garage, List<Stationnement>> entry : map.entrySet()) {
+            out.println("Garage " + entry.getKey() + " :");
+            for (Stationnement s : entry.getValue()) {
+                out.println("\t- " + s);
+            }
+        }
+    }
 }
+
